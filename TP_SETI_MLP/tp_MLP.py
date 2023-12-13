@@ -117,7 +117,7 @@ def main():
     y_predict = regr.predict(X_test)
     
     # Plots
-    plot_surf_and_scatter("fjlksdmjfq", X_app, y_app, regr)
-    plot_surf_and_scatter("fjlksdmjfq", X_test, y_test, regr)
+    plot_surf_and_scatter("MLP learning set", X_app, y_app, regr)
+    plot_surf_and_scatter("MLP Test set", X_test, y_test, regr)
     plot_confusion(X_test, y_test, regr, "CONFUSION_MLP")
 main()
