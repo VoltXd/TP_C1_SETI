@@ -130,7 +130,8 @@ def main():
 
         # Convert results to clustured image
         image_cluster = result_to_image(image_fruit, centroids, labels)
-        print(image_cluster)
+
+        # Save image
         ski.io.imsave("Result_{}.jpg".format(K), image_cluster)
 
 if __name__ == "__main__":
