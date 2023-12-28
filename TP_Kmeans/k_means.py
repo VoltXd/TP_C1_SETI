@@ -27,8 +27,79 @@ def plot_clusters(centroids, x_array, colors):
         plt.scatter(centroids[k][0], centroids[k][1], colors[i])
         plt.scatter(x_array[k, 0])
 
+def plot_k_means(X, centroids, labels, COLORS_DICT):
+    K = len(centroids)
+    clustered_data = []
+    for i in range(K):
+        clustered_data.append([])
+
+    for i in range(len(X)):
+        clustered_data[labels[i]].append(X[i])
+
+    for i in range(K):    
+        plt.plot([x[0] for x in clustered_data[i]], [x[1] for x in clustered_data[i]], "+", label="Data Set", c=COLORS_DICT[i])
+        plt.plot(centroids[i][0], centroids[i][1], "s", label="Centroids", c="black")
+    plt.legend()
+    plt.show()
+    return
+
+def k_means(X, K):
+    # Get data borders
+    DIMENSION = len(X[0])
+    x_min = []
+    x_max = []
+    for i in range(DIMENSION):
+        column = [x[i] for x in X]
+        x_min.append(min(column))
+        x_max.append(max(column))
+    
+    # CONSTANTS, Initial conditions, Stopping parameters
+    MAX_ITERATIONS = 10000
+    ENDING_VARIATION_DISTANCE = 0.0001
+
+    iterations = 0
+    maximum_variation_distance = np.inf
+
+    centroids = []
+    for i in range(K):
+        centroids.append(np.random.uniform(x_min, x_max, None))
+    labels = [None] * len(X)
+
+    # Début itérations
+    while ENDING_VARIATION_DISTANCE < maximum_variation_distance and iterations < MAX_ITERATIONS:
+        # Update previous centroids
+        previous_centroids = centroids.copy()
+
+        # Classification ()
+        for i in range(len(X)):
+            labels[i] = find_closest_cluster(X[i], centroids)
+
+        # Recentrage
+        for i in range(K):
+            centroids[i] = np.zeros(DIMENSION)
+            number_of_elements = 0
+            for j in range(len(X)):
+                if i == labels[j]:
+                    centroids[i] += X[j]
+                    number_of_elements += 1
+            centroids[i] /= number_of_elements
+
+        # Update ending parameters
+        iterations += 1
+        maximum_variation_distance = max([euclidean_distance(previous_centroids[i], centroids[i]) for i in range(len(centroids))])
+    
+    print("Iterations : {}, Max variation : {}".format(iterations, maximum_variation_distance))
+
+    # Classification FINALE
+    for i in range(len(X)):
+        labels[i] = find_closest_cluster(X[i], centroids)
+
+    return centroids, labels
 
 def main():
+    K = 6
+    COLORS_DICT = { 0 : "r", 1 : "b", 2 : "g", 3 : "c", 4 : "y", 5 : "m" }
+
     x_array = []
     
     # Retrieve the data
@@ -43,71 +114,11 @@ def main():
                 x_array.append(np.array([float(element) for element in row]))
                 line_count += 1
 
-    # Get data borders
-    DIMENSION = len(x_array[0])
-    x_min = []
-    x_max = []
-    for i in range(DIMENSION):
-        column = [x[i] for x in x_array]
-        x_min.append(min(column))
-        x_max.append(max(column))
-    
-    # CONSTANTS, Initial conditions, Stopping parameters
-    K = 6
-    MAX_ITERATIONS = 10000
-    ENDING_VARIATION_DISTANCE = 0.0001
+    # Compute K-Means
+    centroids, labels = k_means(x_array, K)
 
-    COLORS_DICT = { 0 : "r", 1 : "b", 2 : "g", 3 : "c", 4 : "y", 5 : "m" }
-
-    iterations = 0
-    maximum_variation_distance = np.inf
-
-    centroids = []
-    for i in range(K):
-        centroids.append(np.random.uniform(x_min, x_max, None))
-    labels = [None] * len(x_array)
-
-    # Début itérations
-    while ENDING_VARIATION_DISTANCE < maximum_variation_distance and iterations < MAX_ITERATIONS:
-        # Update previous centroids
-        previous_centroids = centroids.copy()
-
-        # Classification ()
-        for i in range(len(x_array)):
-            labels[i] = find_closest_cluster(x_array[i], centroids)
-
-        # Recentrage
-        for i in range(K):
-            centroids[i] = np.zeros(DIMENSION)
-            number_of_elements = 0
-            for j in range(len(x_array)):
-                if i == labels[j]:
-                    centroids[i] += x_array[j]
-                    number_of_elements += 1
-            centroids[i] /= number_of_elements
-
-        # Update ending parameters
-        iterations += 1
-        maximum_variation_distance = max([euclidean_distance(previous_centroids[i], centroids[i]) for i in range(len(centroids))])
-
-
-    # Classification FINALE
-    for i in range(len(x_array)):
-        labels[i] = find_closest_cluster(x_array[i], centroids)
-
-    clustered_data = []
-    for i in range(K):
-        clustered_data.append([])
-
-    for i in range(len(x_array)):
-        clustered_data[labels[i]].append(x_array[i])
-
-    print("Iterations : {}, Max variation : {}".format(iterations, maximum_variation_distance))
-    for i in range(K):    
-        plt.plot([x[0] for x in clustered_data[i]], [x[1] for x in clustered_data[i]], "+", label="Data Set", c=COLORS_DICT[i])
-        plt.plot(centroids[i][0], centroids[i][1], "s", label="Centroids", c="black")
-    plt.legend()
-    plt.show()
+    # Plot result
+    plot_k_means(x_array, centroids, labels, COLORS_DICT)
 
 
 
