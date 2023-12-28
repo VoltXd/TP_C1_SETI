@@ -5,6 +5,18 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 from sklearn.neural_network import MLPRegressor
 import numpy as np
 
+def plot_error_profile(L_error_app, L_error_test, namefig="error_profile"):
+    plt.plot(range(2, len(L_error_app)+2), L_error_app, '-r')
+    plt.plot(range(2, len(L_error_test)+2), L_error_test, '-b')
+    plt.grid()
+    plt.yscale("log")
+    # plt.show()
+    plt.savefig(namefig+'.jpg', dpi=200)
+    plt.close()
+
+def get_MSE(x, y, reg):
+    return np.sum(pow(reg.predict(x) - y, 2)) / x.shape[0]
+
 def tan_hyp(x):
     A = np.array([[1, 1], [-2, 1]])
     b = np.array([0.2, -0.3])
@@ -25,9 +37,9 @@ def plot_surf(figname, regr=None):
     for i, x1 in enumerate(x1v):
         for j, x2 in enumerate(x2v):
             if not regr:
-                R[j, i] = tan_hyp(np.array([x1, x2]))
+                R[i, j] = tan_hyp(np.array([x1, x2]))
             else:
-                R[j, i] = regr.predict(np.array([[x1, x2]]))[0]
+                R[i, j] = regr.predict(np.array([[x1, x2]]))[0]
 
     fig = plt.figure()
     ax = plt.axes(projection='3d')
@@ -40,7 +52,7 @@ def plot_surf(figname, regr=None):
 
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.savefig(figname, dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 def plot_surf_and_scatter(figname, X, Y, regr=None):
@@ -72,7 +84,7 @@ def plot_surf_and_scatter(figname, X, Y, regr=None):
 
     fig.colorbar(surf, shrink=0.5, aspect=5)
     plt.savefig(figname, dpi=300)
-    plt.show()
+    # plt.show()
     plt.close()
 
 def plot_confusion(x_t, y_t, reg, namefig="confusion"):
@@ -112,12 +124,26 @@ def main():
             j = 0
             i += 1
 
-    # Training
-    regr = MLPRegressor(hidden_layer_sizes=100).fit(X_app, y_app)
-    y_predict = regr.predict(X_test)
+    L_error_app = []
+    L_error_test = []
     
+    # Training
+    for hl_size in range(2, 101):
+        regr = MLPRegressor(hidden_layer_sizes=hl_size, max_iter=2000, activation="tanh").fit(X_app, y_app)
+
+        L_error_app.append(get_MSE(X_app, y_app, regr))
+        L_error_test.append(get_MSE(X_test, y_test, regr))
+
+    best = np.argmin(L_error_test) + 2
+    print("Meilleur modele -> Neurones =", best)
+    
+    regr = MLPRegressor(hidden_layer_sizes=best, max_iter=2000, activation="tanh").fit(X_app, y_app)
+
     # Plots
     plot_surf_and_scatter("MLP learning set", X_app, y_app, regr)
     plot_surf_and_scatter("MLP Test set", X_test, y_test, regr)
     plot_confusion(X_test, y_test, regr, "CONFUSION_MLP")
+    
+    plot_error_profile(L_error_app, L_error_test, "Profil_Err_App_Test_MLP")
+
 main()
