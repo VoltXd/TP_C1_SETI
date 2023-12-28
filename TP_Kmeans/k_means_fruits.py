@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
+import skimage as ski
 
 def euclidean_distance(u1, u2):
     if len(u1) != len(u2):
@@ -41,6 +42,28 @@ def plot_k_means(X, centroids, labels, COLORS_DICT):
     plt.legend()
     plt.show()
     return
+
+def image_to_dataset(img):
+    HEIGHT, WIDTH, CHANNELS = img.shape
+    mat = np.zeros((HEIGHT * WIDTH, CHANNELS))
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            for c in range(CHANNELS):
+                mat[i * WIDTH + j, c] = img[i, j, c]
+    
+    return mat
+
+def result_to_image(img, centroids, labels):
+    HEIGHT, WIDTH, CHANNELS = img.shape
+    img_cluster = np.zeros(img.shape, dtype=np.uint8)
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            for c in range(CHANNELS):
+                img_cluster[i, j, c] = np.uint8(centroids[labels[i * WIDTH + j]][c])
+    
+    return img_cluster
+
+
 
 def k_means(X, K):
     # Get data borders
@@ -96,30 +119,19 @@ def k_means(X, K):
     return centroids, labels
 
 def main():
-    K = 6
-    COLORS_DICT = { 0 : "r", 1 : "b", 2 : "g", 3 : "c", 4 : "y", 5 : "m" }
+    for K in range(2, 9):
+        image_fruit = ski.io.imread("fruits.jpg")
 
-    x_array = []
-    
-    # Retrieve the data
-    with open('kmeans_6_classes.csv') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
-        line_count = 0
-        for row in csv_reader:
-            if line_count == 0:
-                line_count += 1
-                continue
-            else:
-                x_array.append(np.array([float(element) for element in row]))
-                line_count += 1
+        # Convert image to dataset
+        x_array = image_to_dataset(image_fruit)
+        
+        # Compute K-Means
+        centroids, labels = k_means(x_array, K)
 
-    # Compute K-Means
-    centroids, labels = k_means(x_array, K)
-
-    # Plot result
-    plot_k_means(x_array, centroids, labels, COLORS_DICT)
-
-
+        # Convert results to clustured image
+        image_cluster = result_to_image(image_fruit, centroids, labels)
+        print(image_cluster)
+        ski.io.imsave("Result_{}.jpg".format(K), image_cluster)
 
 if __name__ == "__main__":
     main()
