@@ -15,8 +15,9 @@ hand-written digits, from 0-9.
 import matplotlib.pyplot as plt
 
 # Import datasets, classifiers and performance metrics
-from sklearn import datasets, metrics, svm
+from sklearn import datasets, metrics, svm, model_selection
 from sklearn.model_selection import train_test_split
+import pandas as pd
 
 ###############################################################################
 # Digits dataset
@@ -59,13 +60,51 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 n_samples = len(digits.images)
 data = digits.images.reshape((n_samples, -1))
 
-# Create a classifier: a support vector classifier
-clf = svm.SVC(gamma=0.001)
+
 
 # Split data into 50% train and 50% test subsets
 X_train, X_test, y_train, y_test = train_test_split(
     data, digits.target, test_size=0.5, shuffle=False
 )
+
+########################################################################
+# Validation croisée 
+# ------------------
+#
+#
+
+clf = model_selection.GridSearchCV(svm.SVC(gamma=0.001), {"kernel":["poly", "rbf", "sigmoid"], "C":[1, 5, 10, 100]})
+
+clf.fit(data, digits.target)
+print("Best estimator: ", clf.best_estimator_)
+df = pd.DataFrame(data=clf.cv_results_)
+plt.figure()
+for i in range(len(df)):
+    if df["param_kernel"][i] == "poly":
+        plt.errorbar(df["param_C"][i], df["mean_test_score"][i], df["std_test_score"][i], fmt="bD")
+    elif df["param_kernel"][i] == "rbf":
+        plt.errorbar(df["param_C"][i], df["mean_test_score"][i], df["std_test_score"][i], fmt="ro")
+    elif df["param_kernel"][i] == "sigmoid":
+        plt.errorbar(df["param_C"][i], df["mean_test_score"][i], df["std_test_score"][i], fmt="gs")
+    
+plt.grid(which="both")
+plt.legend(["Poly", "RBF", "Sigmoid"])      # ATTENTION, WARNING: Marche dans les configuration actuelle du GridSearchCV uniquement
+plt.title("Results of GridSearchCV")
+plt.xlabel("C")
+plt.ylabel("Test score")
+plt.show()
+print(df["mean_fit_time"])
+kernel = clf.best_params_["kernel"]
+C = clf.best_params_["C"]
+
+# FIN Validation croisée 
+# ----------------------
+#
+########################################################################
+
+# Create a classifier: a support vector classifier
+clf = svm.SVC(gamma=0.001, kernel=kernel, C=C)
+# clf = svm.SVC(gamma=0.001)
 
 # Learn the digits on the train subset
 clf.fit(X_train, y_train)
@@ -83,6 +122,27 @@ for ax, image, prediction in zip(axes, X_test, predicted):
     image = image.reshape(8, 8)
     ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
     ax.set_title(f"Prediction: {prediction}")
+
+###############################################################################
+# Tentative d'interprétation des erreurs
+
+_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
+i = 0
+for ax, image, prediction in zip(axes, X_test, predicted):
+    while i < len(predicted):
+        if predicted[i] == y_test[i]:
+            i += 1
+            continue
+        else:
+            break
+
+
+    ax.set_axis_off()
+    image = X_test[i]
+    image = image.reshape(8, 8)
+    ax.imshow(image, cmap=plt.cm.gray_r, interpolation="nearest")
+    ax.set_title(f"Prediction: {predicted[i]}, Target: {y_test[i]}")
+    i += 1
 
 ###############################################################################
 # :func:`~sklearn.metrics.classification_report` builds a text report showing
