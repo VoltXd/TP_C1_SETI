@@ -18,12 +18,21 @@ def get_MSE(x, y, reg):
     return np.sum(pow(reg.predict(x) - y, 2)) / x.shape[0]
 
 def tan_hyp(x):
-    A = np.array([[1, 1], [-2, 1]])
-    b = np.array([0.2, -0.3])
+    A = np.array([[5, 0], [0, 7]])
+    b = np.array([-0.5, -0.5])
 
-    z = A.dot(x) + b
+    z = A.dot(x + b) 
     h = np.transpose(z).dot(np.ones(z.shape))
     y = (np.tanh(h) + 1) / 2 
+    return y
+
+def sinc(x):
+    A = np.array([[5, 0], [0, 7]])
+    b = np.array([-0.5, -0.5])
+
+    z = A.dot(x + b) 
+    h =  np.sqrt(np.transpose(z).dot(z))
+    y = np.sin(h) / h 
     return y
 
 def plot_surf(figname, regr=None):
@@ -55,18 +64,22 @@ def plot_surf(figname, regr=None):
     # plt.show()
     plt.close()
 
-def plot_surf_and_scatter(figname, X, Y, regr=None):
+def plot_surf_and_scatter(figname, X, Y, regr=None, func=tan_hyp):
     step_v = 0.005
 
-    x1v = np.arange(0,1,step_v)
-    x2v = np.arange(0,1,step_v)
+    x1min = min(X[:,0])
+    x1max = max(X[:,0])
+    x2min = min(X[:,1])
+    x2max = max(X[:,1])
+    x1v = np.arange(x1min,x1max,step_v)
+    x2v = np.arange(x2min,x2max,step_v)
     Xv, Yv = np.meshgrid(x1v, x2v)
 
     R = np.zeros(Xv.shape)
     for i, x1 in enumerate(x1v):
         for j, x2 in enumerate(x2v):
             if not regr:
-                R[j, i] = tan_hyp(np.array([x1, x2]))
+                R[j, i] = func(np.array([x1, x2]))
             else:
                 R[j, i] = regr.predict(np.array([[x1, x2]]))[0]
 
@@ -98,26 +111,29 @@ def plot_confusion(x_t, y_t, reg, namefig="confusion"):
 
 def main():
 
+    FUNC = tan_hyp
+
     # Get learning set
     with open("sinc_dim2_input.csv", 'r') as f:
         f.readline() # Skip the header
         X_app = np.loadtxt(f, delimiter=';')
 
-    y_app = np.zeros(X_app[:,0].shape)
+    y_app = np.zeros(X_app.shape[0])
     for i, x in enumerate(X_app):
-        y_app[i] = tan_hyp(x)
+        y_app[i] = FUNC(x)
 
     # Generate test set
-    mesh_line = np.linspace(0, 1, 40)
-    test_set_size = 40*40
+    POINTS_PER_DIM = 40
+    mesh_line = np.linspace(0, 1, POINTS_PER_DIM)
+    test_set_size = POINTS_PER_DIM ** 2
     X_test = np.zeros((test_set_size, 2))
-    y_test = np.zeros((test_set_size, 1))
+    y_test = np.zeros(test_set_size)
     i = 0
     j = 0
     for idx in range(test_set_size):
         x = np.array([mesh_line[i], mesh_line[j]])
         X_test[idx] = x
-        y_test[idx] = tan_hyp(x)
+        y_test[idx] = FUNC(x)
 
         j += 1
         if j == 40:
@@ -128,20 +144,31 @@ def main():
     L_error_test = []
     
     # Training
-    for hl_size in range(2, 101):
-        regr = MLPRegressor(hidden_layer_sizes=hl_size, max_iter=2000, activation="tanh").fit(X_app, y_app)
+    for hl_size in range(2, 200 + 1):
+        # L_error_app.append(get_MSE(X_app, y_app, regr))
+        # L_error_test.append(get_MSE(X_test, y_test, regr))
+        L_error_app.append(0)
+        L_error_test.append(0)
 
-        L_error_app.append(get_MSE(X_app, y_app, regr))
-        L_error_test.append(get_MSE(X_test, y_test, regr))
+        NUMBER_OF_TESTS = 25
+        for i in range(NUMBER_OF_TESTS):    
+            regr = MLPRegressor(hidden_layer_sizes=(hl_size,), max_iter=2000, activation="tanh", learning_rate="adaptive")
+            regr = regr.fit(X_app, y_app)
+            L_error_app[-1] += get_MSE(X_app, y_app, regr)
+            L_error_test[-1] += get_MSE(X_test, y_test, regr)
+        L_error_app[-1] /= NUMBER_OF_TESTS
+        L_error_test[-1] /= NUMBER_OF_TESTS
+
+
 
     best = np.argmin(L_error_test) + 2
     print("Meilleur modele -> Neurones =", best)
     
-    regr = MLPRegressor(hidden_layer_sizes=best, max_iter=2000, activation="tanh").fit(X_app, y_app)
+    regr = MLPRegressor(hidden_layer_sizes=(best,), max_iter=2000, activation="tanh", learning_rate="adaptive").fit(X_app, y_app)
 
     # Plots
-    plot_surf_and_scatter("MLP learning set", X_app, y_app, regr)
-    plot_surf_and_scatter("MLP Test set", X_test, y_test, regr)
+    plot_surf_and_scatter("MLP learning set", X_app, y_app, regr, FUNC)
+    plot_surf_and_scatter("MLP Test set", X_test, y_test, regr, FUNC)
     plot_confusion(X_test, y_test, regr, "CONFUSION_MLP")
     
     plot_error_profile(L_error_app, L_error_test, "Profil_Err_App_Test_MLP")

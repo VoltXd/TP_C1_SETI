@@ -45,7 +45,7 @@ def genere_black_hole(n=300, mu=[0,0], std=1, delta=0.2, radius=1.0):
     return X, Y
 
 def plot_data_hyperplan(X, Y, classifier, figname, support_indices):
-    plt.figure(figsize=(12,12*9/16))
+    plt.figure(figsize=(12,12*3/4))
 
     plot_dict = {1 : "b", -1 : "r"}
     c = [plot_dict[y] for y in Y]
@@ -59,6 +59,12 @@ def plot_data_hyperplan(X, Y, classifier, figname, support_indices):
     minx2 = min(X[:,1])
     maxx2 = max(X[:,1])
 
+    minx1 = min(minx1, minx2)
+    minx2 = minx1
+    maxx1 = max(maxx1, maxx2)
+    maxx2 = maxx1
+    
+
     xx = np.linspace(minx1, maxx1, 100)
     yy = np.linspace(minx2, maxx2, 100).T
     xx, yy = np.meshgrid(xx, yy)
@@ -69,12 +75,12 @@ def plot_data_hyperplan(X, Y, classifier, figname, support_indices):
 
     # Plot
     plt.contourf(xx, yy, P[:,1].reshape((100,100)), 100, cmap="magma")
-    plt.colorbar()
+    # plt.colorbar()
     plt.contour(xx, yy, Z.reshape((100, 100)), [-1, 0, 1], colors=["cyan", "g", "cyan"])
     plt.scatter(X[:,0], X[:,1], c=c, s=s, edgecolors="black")
     plt.xlim((minx1, maxx1))
     plt.ylim((minx2, maxx2))
-    plt.grid()
+    # plt.grid()
     plt.savefig(figname)
     plt.close()
     return
@@ -135,6 +141,22 @@ def main(X, Y):
     degree = classifier.best_params_["degree"]
     classifier = SVC(kernel = kernel, degree=degree, C=C, coef0=1, probability=True)
     classifier = classifier.fit(X, Y)
+    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly", classifier.support_)
+    
+    classifier = SVC(kernel = kernel, degree=degree, C=C*10, coef0=1, probability=True)
+    classifier = classifier.fit(X, Y)
+    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly_C10", classifier.support_)
+    classifier = SVC(kernel = kernel, degree=degree, C=C*0.1, coef0=1, probability=True)
+    classifier = classifier.fit(X, Y)
+    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly_C01", classifier.support_)
+
+    classifier = SVC(kernel = kernel, degree=degree+1, C=C, coef0=1, probability=True)
+    classifier = classifier.fit(X, Y)
+    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly_deg1", classifier.support_)
+    classifier = SVC(kernel = kernel, degree=degree-1, C=C, coef0=1, probability=True)
+    classifier = classifier.fit(X, Y)
+    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly_deg-1", classifier.support_)
+
     Y_predict = classifier.predict(X_test)
     
     # WARNING: THRESHOLD = 0.5 !!!!!!!
@@ -173,9 +195,8 @@ def main(X, Y):
     from sklearn.metrics import roc_curve
     fpr, tpr, threshold = roc_curve(Y_test, classifier.predict_proba(X_test)[:,1])
     plt.plot(fpr, tpr)
-    plt.show()
-    plot_roc(X_test, Y_test, classifier)
-    plot_data_hyperplan(X, Y, classifier, "Graph_SVM_poly", classifier.support_)
+    # plt.show()
+    # plot_roc(X_test, Y_test, classifier)
     
     # Black hole
     X, Y = genere_black_hole(n=1000)

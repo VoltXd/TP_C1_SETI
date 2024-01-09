@@ -43,7 +43,7 @@ def main(degre_max=12, nb_ex=20, sigma=0.2):
     x_max = 1.2
     
     x_app, y_app = genere_exemple_dim1(x_min, x_max, nb_ex, sigma)
-    x_test, y_test = genere_exemple_dim1(x_min, x_max, 200, 0)
+    x_test, y_test = genere_exemple_dim1(x_min, x_max * 2, 200, 0)
 
     L_error_app = []
     L_error_test = []
@@ -65,11 +65,12 @@ def main(degre_max=12, nb_ex=20, sigma=0.2):
 
         # Plot du modèle de degré i
         plot_model(Xa, y_app, Xt, y_test, reg, "Model_%02d" % i)
+        plot_confusion(Xt, y_test, reg, "Confusion_%02d" % i)
     
     # Déterminer le degré optimal
     best = np.argmin(L_error_test) + 1
     print("Meilleur modele -> degre =", best)
-    plot_error_profile(L_error_app, L_error_test, "Profil_Err_App_Test")
+    plot_error_profile(L_error_app, L_error_test, f"Profil_Err_App_Test_{nb_ex}")
 
     # Création du modèle final optimal
     poly = PolynomialFeatures(best)
@@ -79,7 +80,9 @@ def main(degre_max=12, nb_ex=20, sigma=0.2):
     # Création du modèle linéaire
     reg = LinearRegression().fit(Xa, y_app)
 
-    plot_confusion(Xt, y_test, reg, "Confusion")
+    plot_confusion(Xt, y_test, reg, "Confusion_best")
 
 if __name__ == "__main__":
-    main(sigma=0.5)
+    nb_exs = [10, 50, 200]
+    for nb_ex in nb_exs:
+        main(nb_ex=nb_ex)

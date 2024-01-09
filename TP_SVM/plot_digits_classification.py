@@ -76,7 +76,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 clf = model_selection.GridSearchCV(svm.SVC(gamma=0.001), {"kernel":["poly", "rbf", "sigmoid"], "C":[1, 5, 10, 100]})
 
 clf.fit(data, digits.target)
-print("Best estimator: ", clf.best_estimator_)
+print("Best parameters: ", clf.best_params_)
 df = pd.DataFrame(data=clf.cv_results_)
 plt.figure()
 for i in range(len(df)):
@@ -92,8 +92,8 @@ plt.legend(["Poly", "RBF", "Sigmoid"])      # ATTENTION, WARNING: Marche dans le
 plt.title("Results of GridSearchCV")
 plt.xlabel("C")
 plt.ylabel("Test score")
+plt.savefig("gscv_letters")
 plt.show()
-print(df["mean_fit_time"])
 kernel = clf.best_params_["kernel"]
 C = clf.best_params_["C"]
 
