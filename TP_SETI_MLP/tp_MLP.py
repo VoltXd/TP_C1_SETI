@@ -24,7 +24,7 @@ def tan_hyp(x):
     z = A.dot(x + b) 
     h = np.transpose(z).dot(np.ones(z.shape))
     y = (np.tanh(h) + 1) / 2 
-    return y
+    return y 
 
 def sinc(x):
     A = np.array([[5, 0], [0, 7]])
@@ -144,15 +144,16 @@ def main():
     L_error_test = []
     
     # Training
-    for hl_size in range(2, 200 + 1):
+    for hl_size in range(2, 10 + 1):
         # L_error_app.append(get_MSE(X_app, y_app, regr))
         # L_error_test.append(get_MSE(X_test, y_test, regr))
         L_error_app.append(0)
         L_error_test.append(0)
+        print(f"{hl_size} neuronnes")
 
         NUMBER_OF_TESTS = 25
         for i in range(NUMBER_OF_TESTS):    
-            regr = MLPRegressor(hidden_layer_sizes=(hl_size,), max_iter=2000, activation="tanh", learning_rate="adaptive")
+            regr = MLPRegressor(hidden_layer_sizes=(hl_size,), max_iter=2000, activation="tanh", solver="lbfgs", tol=0.0001)
             regr = regr.fit(X_app, y_app)
             L_error_app[-1] += get_MSE(X_app, y_app, regr)
             L_error_test[-1] += get_MSE(X_test, y_test, regr)
